@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
 import {debugDraw} from '../utils/debug'
-
+import {createLizardAnims} from '../anims/EnemyAnims'
+import {createCharacterAnims} from '../anims/CharacterAnims'    
+import Lizard from '~/enemies/Lizard'
 
 export default class Game extends Phaser.Scene
 {
@@ -18,6 +20,10 @@ preload()
 }
 create()
 {
+    createCharacterAnims(this.anims)
+
+    this.scene.run('game-ui')
+
     const map = this.make.tilemap({ key: 'user_room' })
     const tileSetInterior = map.addTilesetImage('Interior', 'Interior') //tile set name and image key
     const tileSetModern = map.addTilesetImage('modern', 'modern') //tile set name and image key
@@ -30,65 +36,46 @@ create()
     const interior_layer = map.createLayer('Interior', tileSetInterior)
     interior_layer.setCollisionByProperty({ collides: true })
 
-        // debugDraw(wall_layer, this)
+        debugDraw(wall_layer, this)
 
         this.faune = this.physics.add.sprite(120, 120, 'faune', 'walk-down-3.png')
         //all animations are global once we add them
         //set the body size of the sprite for collision handling
         this.faune.body.setSize(this.faune.width * 0.5, this.faune.height * 0.8)
 
-        this.anims.create({
-            key: 'faune-idle-down',
-            frames: [{ key: 'faune', frame: 'walk-down-3.png' }]
-        })
-        
-        //genereate an rray of all the frames automatically instead of writing out manually.
-        this.anims.create({
-            key: 'faune-walk-down',
-            frames: this.anims.generateFrameNames('faune', { start: 1, end: 8, prefix: 'walk-down-', suffix: '.png' }),
-            repeat: -1,
-            frameRate: 15, //animation frame rate, not the game's 
-            duration: 2000 //animation duration
-        })
-
-        this.anims.create({
-            key: 'faune-walk-up',
-            frames: this.anims.generateFrameNames('faune', { start: 1, end: 8, prefix: 'walk-up-', suffix: '.png' }),
-            repeat: -1,
-            frameRate: 15, //animation frame rate, not the game's 
-            duration: 2000 //animation duration
-        })
-
-        this.anims.create({
-            key: 'faune-walk-side',
-            frames: this.anims.generateFrameNames('faune', { start: 1, end: 8, prefix: 'walk-side-', suffix: '.png' }),
-            repeat: -1,
-            frameRate: 15, //animation frame rate, not the game's 
-            duration: 2000 //animation duration
-        })
-
-        //initiate idle
-        this.anims.create({
-            key: 'faune-idle-up',
-            frames: [{ key: 'faune', frame: 'walk-up-3.png' }]
-        })
-
-        this.anims.create({
-            key: 'faune-idle-up',
-            frames: [{ key: 'faune', frame: 'walk-down-3.png' }]
-        })
-
-        this.anims.create({
-            key: 'faune-idle-side',
-            frames: [{ key: 'faune', frame: 'walk-side-3.png' }]
-        })
-
         this.faune.anims.play('faune-idle-down')
-
-        this.physics.add.collider(this.faune, wall_layer)
 
         this.cameras.main.startFollow(this.faune, true)
         this.cameras.main.centerOn(0, 0);
+
+        createLizardAnims(this.anims)
+
+        const lizards = this.physics.add.group({
+            classType: Lizard,
+            createCallback: (go) => {
+                const lizardGo = go as Lizard
+                lizardGo.body.onCollide = true
+            }
+        })
+        lizards.get(200, 123, 'lizard')
+
+        this.physics.add.collider(this.faune, wall_layer)
+        this.physics.add.collider(lizards, wall_layer)
+        this.physics.add.collider(lizards, interior_layer)
+        this.physics.add.collider(this.faune, interior_layer)
+        this.physics.add.collider(this.faune, lizards, this.handlePlayerLizardCollision, undefined, this)
+
+    }
+
+    private handlePlayerLizardCollision(obj1: Phaser.GameObjects.GameObject, obj2: Phaser.GameObjects.GameObject)
+    {
+        const lizard = obj2 as Lizard
+        const dx = this.faune.x - lizard.x
+        const dy = this.faune.y - lizard.y
+
+        const dir = new Phaser.Math.Vector2(dx, dy).normalize().scale(200)
+
+        this.faune.setVelocity(dir.x, dir.y)
     }
 
     update(t: number, dt: number)
