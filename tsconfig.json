@@ -19,7 +19,7 @@
 		},
 		"typeRoots": [
 			"node_modules/@types",
-			"node_module/phaser/types"
+			"node_modules/phaser/types"//change from module to modules
 		],
 		"types": [
 			"phaser"
@@ -27,5 +27,5 @@
 	},
 	"include": [
 		"src/**/*"
-	]
+	] 
 }
