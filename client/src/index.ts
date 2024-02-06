@@ -64,7 +64,7 @@ async function main() {
 
   // push to talk
   let recorder: MediaRecorder | undefined;
-  let recorderLimitTimeout: number;
+  let recorderLimitTimeout = 0;
   talkBtnEl.addEventListener("pointerdown", () => {
     // restart recording data
     room.send("push");
